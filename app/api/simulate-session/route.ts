@@ -5,6 +5,7 @@ import { chatText } from "@/lib/openai";
 import {
   SIMULATE_SESSION_SYSTEM,
   buildSimulateSessionUserPrompt,
+  SessionContext,
 } from "@/lib/prompts/simulateSession";
 
 export async function POST(req: NextRequest) {
@@ -48,6 +49,69 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Build context from previous sessions and plans
+    let context: SessionContext | undefined;
+    
+    if (sessionNumber > 1) {
+      // Get previous sessions with their summaries
+      const previousSessions = await prisma.session.findMany({
+        where: { clientId: client.id },
+        orderBy: { date: "desc" },
+        take: 3, // Last 3 sessions for context
+        include: {
+          summaries: true,
+          planVersions: {
+            orderBy: { versionNumber: "desc" },
+            take: 1,
+          },
+        },
+      });
+
+      // Get the most recent treatment plan
+      const latestPlanSession = previousSessions.find(s => s.planVersions.length > 0);
+      const latestPlan = latestPlanSession?.planVersions[0];
+
+      context = {
+        previousSessions: previousSessions.map((s, idx) => {
+          const summary = s.summaries;
+          let keyTopics = "Session conducted";
+          
+          if (summary) {
+            try {
+              const therapistView = JSON.parse(summary.therapistView as string);
+              if (therapistView.bullet_points) {
+                keyTopics = therapistView.bullet_points.slice(0, 2).join("; ");
+              } else if (therapistView.raw_text) {
+                keyTopics = therapistView.raw_text.slice(0, 150);
+              }
+            } catch {
+              // Use default
+            }
+          }
+          
+          return {
+            sessionNumber: previousSessions.length - idx,
+            date: s.date.toLocaleDateString(),
+            keyTopics,
+          };
+        }),
+      };
+
+      if (latestPlan) {
+        try {
+          const plan = JSON.parse(latestPlan.therapistView as string);
+          context.currentPlan = {
+            presenting_concerns: plan.presenting_concerns || "",
+            goals: plan.goals || { short_term: [], long_term: [] },
+            homework: plan.homework || [],
+            strengths: plan.strengths || [],
+          };
+        } catch {
+          // Skip plan context if parsing fails
+        }
+      }
+    }
+
     // Generate transcript using AI
     const transcript = await chatText({
       system: SIMULATE_SESSION_SYSTEM,
@@ -55,6 +119,7 @@ export async function POST(req: NextRequest) {
         persona,
         sessionNumber,
         focus,
+        context,
       }),
     });
 
@@ -82,4 +147,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

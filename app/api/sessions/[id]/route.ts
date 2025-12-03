@@ -5,62 +5,61 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const sessionId = Number(params.id);
+
+  if (isNaN(sessionId)) {
+    return NextResponse.json({ error: "Invalid session ID" }, { status: 400 });
+  }
+
+  const session = await prisma.session.findUnique({
+    where: { id: sessionId },
+    include: {
+      client: true,
+      therapist: true,
+      planVersions: {
+        orderBy: { versionNumber: "desc" },
+      },
+      summaries: true,
+    },
+  });
+
+  if (!session) {
+    return NextResponse.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(session);
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const sessionId = Number(params.id);
+
+  if (isNaN(sessionId)) {
+    return NextResponse.json({ error: "Invalid session ID" }, { status: 400 });
+  }
+
   try {
-    const sessionId = Number(params.id);
+    // Delete related records first (cascade)
+    await prisma.treatmentPlanVersion.deleteMany({
+      where: { sessionId },
+    });
 
-    if (isNaN(sessionId)) {
-      return NextResponse.json({ error: "Invalid session ID" }, { status: 400 });
-    }
+    await prisma.sessionSummary.deleteMany({
+      where: { sessionId },
+    });
 
-    const session = await prisma.session.findUnique({
+    // Delete the session
+    await prisma.session.delete({
       where: { id: sessionId },
-      include: {
-        client: true,
-        therapist: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        planVersions: {
-          orderBy: { versionNumber: "desc" },
-        },
-        summaries: true,
-      },
     });
 
-    if (!session) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
-    }
-
-    // Parse JSON fields
-    const planVersions = session.planVersions.map((pv) => ({
-      ...pv,
-      therapistView: JSON.parse(pv.therapistView),
-      clientView: JSON.parse(pv.clientView),
-      riskFlags: JSON.parse(pv.riskFlags),
-    }));
-
-    const summaries = session.summaries
-      ? {
-          ...session.summaries,
-          therapistView: JSON.parse(session.summaries.therapistView),
-          clientView: JSON.parse(session.summaries.clientView),
-        }
-      : null;
-
-    return NextResponse.json({
-      session: {
-        ...session,
-        planVersions,
-        summaries,
-      },
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error fetching session:", error);
+    console.error("Error deleting session:", error);
     return NextResponse.json(
-      { error: "Failed to fetch session" },
+      { error: "Failed to delete session" },
       { status: 500 }
     );
   }
