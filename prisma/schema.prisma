@@ -1,0 +1,73 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  role      String   // "therapist" | "client"
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  therapistClients Client[]  @relation("TherapistClients")
+  therapistSessions Session[] @relation("TherapistSessions")
+}
+
+model Client {
+  id           Int       @id @default(autoincrement())
+  therapist    User      @relation("TherapistClients", fields: [therapistId], references: [id])
+  therapistId  Int
+  displayName  String
+  personaId    String    // "alex", "jordan", etc. for synthetic generation
+  createdAt    DateTime  @default(now())
+
+  sessions     Session[]
+
+  @@unique([therapistId, personaId], name: "therapistId_personaId")
+}
+
+model Session {
+  id           Int       @id @default(autoincrement())
+  client       Client    @relation(fields: [clientId], references: [id])
+  clientId     Int
+  therapist    User      @relation("TherapistSessions", fields: [therapistId], references: [id])
+  therapistId  Int
+
+  source       String    @default("synthetic") // "synthetic" | "manual"
+  date         DateTime  @default(now())
+  transcript   String
+  createdAt    DateTime  @default(now())
+
+  summaries    SessionSummary?
+  planVersions TreatmentPlanVersion[]
+}
+
+model SessionSummary {
+  id             Int       @id @default(autoincrement())
+  session        Session   @relation(fields: [sessionId], references: [id])
+  sessionId      Int       @unique
+
+  therapistView  String    // JSON stored as string
+  clientView     String    // JSON stored as string
+  createdAt      DateTime  @default(now())
+}
+
+model TreatmentPlanVersion {
+  id                Int       @id @default(autoincrement())
+  session           Session   @relation(fields: [sessionId], references: [id])
+  sessionId         Int
+
+  versionNumber     Int
+  therapistView     String    // JSON stored as string
+  clientView        String    // JSON stored as string
+  riskFlags         String    // JSON stored as string e.g. { hasCrisisLanguage: true, keywords: [...] }
+  createdAt         DateTime  @default(now())
+
+  editedByTherapist Boolean   @default(false)
+}
