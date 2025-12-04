@@ -3,21 +3,39 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface PlanData {
+  presenting_concerns: string;
+  clinical_impressions: string;
+  goals: {
+    short_term: string[];
+    long_term: string[];
+  };
+  interventions: string[];
+  homework: string[];
+  strengths: string[];
+  risk_indicators: string[];
+}
+
 interface EditPlanModalProps {
   planVersionId: number;
-  therapistView: {
-    presenting_concerns: string;
-    clinical_impressions: string;
-    goals: {
-      short_term: string[];
-      long_term: string[];
-    };
-    interventions: string[];
-    homework: string[];
-    strengths: string[];
-    risk_indicators: string[];
-  };
+  therapistView: Partial<PlanData>;
   sessionNumber: number;
+}
+
+// Normalize plan data to ensure all arrays are actually arrays
+function normalizePlan(input: Partial<PlanData>): PlanData {
+  return {
+    presenting_concerns: input.presenting_concerns || "",
+    clinical_impressions: input.clinical_impressions || "",
+    goals: {
+      short_term: Array.isArray(input.goals?.short_term) ? input.goals.short_term : [],
+      long_term: Array.isArray(input.goals?.long_term) ? input.goals.long_term : [],
+    },
+    interventions: Array.isArray(input.interventions) ? input.interventions : [],
+    homework: Array.isArray(input.homework) ? input.homework : [],
+    strengths: Array.isArray(input.strengths) ? input.strengths : [],
+    risk_indicators: Array.isArray(input.risk_indicators) ? input.risk_indicators : [],
+  };
 }
 
 export default function EditPlanModal({
@@ -26,7 +44,7 @@ export default function EditPlanModal({
   sessionNumber,
 }: EditPlanModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [plan, setPlan] = useState(therapistView);
+  const [plan, setPlan] = useState<PlanData>(() => normalizePlan(therapistView));
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -331,7 +349,7 @@ export default function EditPlanModal({
             <div className="px-6 py-4 border-t border-white/10 flex justify-end gap-3">
               <button
                 onClick={() => {
-                  setPlan(therapistView);
+                  setPlan(normalizePlan(therapistView));
                   setIsOpen(false);
                 }}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"

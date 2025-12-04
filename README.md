@@ -7,10 +7,12 @@ An AI-powered mental health treatment planning application built for the Gauntle
 This application demonstrates AI-assisted treatment planning for mental health therapy, featuring:
 
 - **Dual-view treatment plans**: Clinical documentation for therapists and plain-language summaries for clients
-- **Synthetic session generation**: AI-powered simulation of therapy sessions using predefined client personas
+- **Synthetic session generation**: AI-powered simulation of realistic 45-50 minute therapy sessions
 - **Safety detection**: Automatic flagging of crisis language with keyword scanning
-- **Treatment plan versioning**: Track changes across sessions with version history
+- **Treatment plan evolution**: Plans update intelligently across multiple sessions
 - **Session summaries**: Auto-generated summaries for both therapist notes and client understanding
+- **PDF exports**: Download transcripts, plans, and summaries as PDFs
+- **File upload**: Import session transcripts from .doc, .docx, or .txt files
 
 ## Tech Stack
 
@@ -21,6 +23,8 @@ This application demonstrates AI-assisted treatment planning for mental health t
 - **Styling**: Tailwind CSS v4
 - **Validation**: Zod
 - **Testing**: Vitest
+- **PDF Generation**: jsPDF
+- **Document Parsing**: mammoth
 
 ## Getting Started
 
@@ -70,7 +74,11 @@ tava_ATP/
 │   │   ├── generate-plan/    # Treatment plan generation
 │   │   ├── generate-summary/ # Session summary generation
 │   │   ├── sessions/         # Session data endpoints
-│   │   └── simulate-session/ # Synthetic session generation
+│   │   ├── simulate-session/ # Synthetic session generation
+│   │   ├── upload-transcript/# File upload endpoint
+│   │   ├── update-plan/      # Plan editing endpoint
+│   │   ├── plans/            # Plan management
+│   │   └── summaries/        # Summary management
 │   ├── client/[id]/          # Client-facing dashboard
 │   ├── therapist/            # Therapist dashboard
 │   │   └── clients/[id]/     # Client timeline view
@@ -105,19 +113,24 @@ tava_ATP/
 ### Therapist Dashboard
 
 - View all assigned clients
-- Generate synthetic therapy sessions
+- Generate synthetic therapy sessions (50+ realistic exchanges)
 - Create AI-assisted treatment plans
+- **Update plans** based on subsequent sessions (plans evolve over time)
+- **Edit plans** directly in the UI
 - Generate session summaries
 - View risk flags and crisis language alerts
 - Track treatment plan versions
+- **Upload transcripts** from Word documents or text files
+- **Download PDFs** of transcripts, plans, and summaries
 
 ### Client Portal
 
 - View personalized treatment plan in plain language
 - See short-term and long-term goals
-- Track homework assignments
+- Track homework assignments with checklist
 - Review session summaries
 - Understand identified strengths
+- View "last updated" date for treatment plan
 
 ### Synthetic Personas
 
@@ -135,9 +148,14 @@ The app includes 4 predefined client personas for testing:
 | POST | `/api/simulate-session` | Generate synthetic therapy session |
 | POST | `/api/generate-plan` | Create treatment plan from transcript |
 | POST | `/api/generate-summary` | Generate session summaries |
+| POST | `/api/upload-transcript` | Upload .doc/.docx/.txt transcript |
+| POST | `/api/update-plan` | Edit existing treatment plan |
 | GET | `/api/clients` | List all clients |
 | GET | `/api/clients/[id]` | Get client details |
 | GET | `/api/sessions/[id]` | Get session details |
+| DELETE | `/api/sessions/[id]` | Delete session (cascades) |
+| DELETE | `/api/plans/[id]` | Delete treatment plan |
+| DELETE | `/api/summaries/[id]` | Delete session summary |
 
 ## Running Tests
 
@@ -149,20 +167,20 @@ npm test
 npm run test:watch
 
 # Type check
-npm run typecheck
+npx tsc --noEmit
 ```
 
 ## Database Commands
 
 ```bash
 # Run migrations
-npm run db:migrate
+npx prisma migrate dev
 
 # Push schema changes (dev)
-npm run db:push
+npx prisma db push
 
 # Open Prisma Studio
-npm run db:studio
+npx prisma studio
 ```
 
 ## Safety Features
@@ -174,9 +192,15 @@ The application includes multiple layers of safety detection:
 3. **Visual alerts**: Risk flags are prominently displayed in the therapist dashboard
 4. **Evidence excerpts**: Provides context snippets for flagged content
 
-## Disclaimer
+## Demo Flow
 
-This is a demonstration application using synthetic data only. It is not intended for clinical use and should not be used as a substitute for professional mental health care.
+For the best demonstration experience:
+
+1. **Generate Session 1** for a client → **Generate Plan** (creates initial treatment plan)
+2. **Generate Session 2** → **Update Plan** (AI evolves the plan based on progress)
+3. View the **client portal** to see the plain-language version
+4. Download PDFs of the transcript, plan, and summary
+5. Try the **Sam** persona to see crisis language detection in action
 
 ## License
 

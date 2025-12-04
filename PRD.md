@@ -1,9 +1,9 @@
 # Product Requirements Document (PRD)
 ## Tava AI-Assisted Treatment Plans
 
-**Version**: 1.0  
-**Last Updated**: December 3, 2025  
-**Status**: MVP Complete
+**Version**: 1.1  
+**Last Updated**: December 4, 2025  
+**Status**: MVP Complete + Enhancements
 
 ---
 
@@ -22,6 +22,8 @@ An AI-powered platform that:
 - Provides clinician-facing and client-facing views of the same plan
 - Detects and flags potential crisis language for clinician review
 - Simulates realistic therapy sessions for testing and demonstration
+- Evolves treatment plans across multiple sessions
+- Allows PDF export of all documentation
 
 ---
 
@@ -36,6 +38,9 @@ An AI-powered platform that:
 | Safety detection | Flag crisis language automatically | COMPLETED |
 | Version tracking | Maintain treatment plan history | COMPLETED |
 | Clean UX | Intuitive interfaces for both user types | COMPLETED |
+| Plan evolution | Update plans based on subsequent sessions | COMPLETED |
+| PDF exports | Download transcripts, plans, summaries | COMPLETED |
+| Manual upload | Upload .doc/.docx/.txt transcripts | COMPLETED |
 
 ### 2.2 Success Metrics (Demo Scope)
 
@@ -43,6 +48,7 @@ An AI-powered platform that:
 - Risk scanner correctly identifies crisis keywords
 - UI renders without errors for both therapist and client views
 - All core API endpoints functional
+- PDF downloads generate correctly
 
 ---
 
@@ -81,11 +87,12 @@ An AI-powered platform that:
 #### 4.1.1 Synthetic Session Generation
 **Status**: COMPLETED
 
-- Generate realistic 50-minute therapy session transcripts
+- Generate realistic 45-50 minute therapy session transcripts (50+ exchanges)
 - Use predefined client personas for consistency
-- Alternate THERAPIST:/CLIENT: dialogue format
-- Include presenting concerns, homework discussion, and next steps
-- Support session numbering for continuity
+- Use actual names (e.g., "Dr. Avery Rhodes:", "Sam:") instead of generic labels
+- Reference previous sessions and current treatment plan for continuity
+- Include presenting concerns, homework review, skill-building, and next steps
+- Support session numbering for multi-session arcs
 
 **API**: `POST /api/simulate-session`
 
@@ -97,8 +104,10 @@ An AI-powered platform that:
 - Generate therapist-facing clinical documentation
 - Generate client-facing plain-language version
 - Version treatment plans per session
+- **NEW**: Update existing plans based on subsequent sessions (plan evolution)
+- **NEW**: Edit plans directly in the UI
 
-**API**: `POST /api/generate-plan`
+**API**: `POST /api/generate-plan`, `POST /api/update-plan`
 
 **Schema**:
 ```json
@@ -122,6 +131,7 @@ An AI-powered platform that:
 - Generate therapist summary (clinical, domain-organized)
 - Generate client summary (warm, encouraging)
 - Include "what we did" and "next steps" for clients
+- **NEW**: View summaries in modal with Clinical/Client tab views
 
 **API**: `POST /api/generate-summary`
 
@@ -139,6 +149,25 @@ An AI-powered platform that:
 - "self-harm", "hurt myself", "hurt someone", "harm others"
 - "don't want to live", "want to die", "better off dead"
 - "no reason to live", "can't go on", "end it all"
+
+#### 4.1.5 Transcript Upload
+**Status**: COMPLETED (NEW)
+
+- Upload .doc, .docx, or .txt files
+- Drag-and-drop interface
+- File validation and size display
+- Parse Word documents using mammoth library
+
+**API**: `POST /api/upload-transcript`
+
+#### 4.1.6 PDF Export
+**Status**: COMPLETED (NEW)
+
+- Download session transcripts as PDF
+- Download treatment plans as PDF
+- Download session summaries as PDF
+- Proper formatting with sections and headers
+- Client and session metadata included
 
 ### 4.2 User Interface
 
@@ -163,20 +192,27 @@ An AI-powered platform that:
 **Status**: COMPLETED
 
 - Session history in reverse chronological order
-- Treatment plan version badges
+- Treatment plan version badges with "Edited" indicator
 - Risk flag alerts with keyword details
-- View transcript modal
-- Generate plan/summary buttons
+- **NEW**: View Transcript modal with PDF download
+- **NEW**: View Full Plan modal with PDF download
+- **NEW**: View Summary modal with Clinical/Client tabs and PDF download
+- **NEW**: Edit Plan modal for direct editing
+- Generate/Update plan buttons (contextual labeling)
+- Generate/Regenerate summary buttons
+- Delete session functionality
+- "Last updated" timestamps
 - Client portal link
 
 #### 4.2.4 Client Portal
 **Status**: COMPLETED
 
-- Personalized greeting
+- Personalized greeting with therapist name
+- "Last updated" date for treatment plan
 - Plain-language treatment plan display
-- Goals with progress indicators
-- Homework checklist
-- Strengths recognition
+- Goals with numbered indicators
+- Homework checklist with consistent styling
+- Strengths recognition tags
 - Session summary display
 - Warm, encouraging design
 
@@ -204,9 +240,15 @@ An AI-powered platform that:
 | POST | /api/simulate-session | Generate synthetic session |
 | POST | /api/generate-plan | Create treatment plan |
 | POST | /api/generate-summary | Create session summary |
+| POST | /api/upload-transcript | Upload transcript file |
+| POST | /api/manual-session | Add pasted transcript |
+| POST | /api/update-plan | Edit existing plan |
 | GET | /api/clients | List therapist's clients |
 | GET | /api/clients/[id] | Get client details |
 | GET | /api/sessions/[id] | Get session details |
+| DELETE | /api/sessions/[id] | Delete session |
+| DELETE | /api/plans/[id] | Delete plan |
+| DELETE | /api/summaries/[id] | Delete summary |
 
 #### 4.3.3 AI Integration
 **Status**: COMPLETED
@@ -215,6 +257,7 @@ An AI-powered platform that:
 - JSON response format for structured outputs
 - Text format for transcript generation
 - Modular prompt templates
+- Context-aware prompts (reference previous sessions/plans)
 
 ---
 
@@ -231,6 +274,8 @@ An AI-powered platform that:
 | Styling | Tailwind CSS v4 |
 | Validation | Zod |
 | Testing | Vitest |
+| PDF Generation | jsPDF |
+| Document Parsing | mammoth |
 
 ### 5.2 Directory Structure
 
@@ -310,6 +355,7 @@ tava_ATP/
 | Phase 10 | Interactive Features | COMPLETED |
 | Phase 11 | Testing | COMPLETED |
 | Phase 12 | Documentation | COMPLETED |
+| Phase 13 | Enhanced Features | COMPLETED |
 
 ### 8.2 Files Created
 
@@ -338,9 +384,14 @@ tava_ATP/
 - `app/api/simulate-session/route.ts`
 - `app/api/generate-plan/route.ts`
 - `app/api/generate-summary/route.ts`
+- `app/api/upload-transcript/route.ts`
+- `app/api/manual-session/route.ts`
+- `app/api/update-plan/route.ts`
 - `app/api/clients/route.ts`
 - `app/api/clients/[id]/route.ts`
 - `app/api/sessions/[id]/route.ts`
+- `app/api/plans/[id]/route.ts`
+- `app/api/summaries/[id]/route.ts`
 
 **Pages**:
 - `app/page.tsx` - Landing page
@@ -351,6 +402,11 @@ tava_ATP/
 - `app/therapist/clients/[id]/page.tsx` - Client timeline
 - `app/therapist/clients/[id]/SessionActions.tsx`
 - `app/therapist/clients/[id]/TranscriptModal.tsx`
+- `app/therapist/clients/[id]/ViewPlanModal.tsx`
+- `app/therapist/clients/[id]/ViewSummaryModal.tsx`
+- `app/therapist/clients/[id]/EditPlanModal.tsx`
+- `app/therapist/clients/[id]/UploadTranscriptModal.tsx`
+- `app/therapist/clients/[id]/DeleteButtons.tsx`
 - `app/client/[id]/page.tsx` - Client portal
 
 **Components**:
@@ -371,21 +427,35 @@ tava_ATP/
 
 ---
 
-## 9. Future Enhancements
+## 9. Recent Enhancements (v1.1)
 
-### 9.1 Short-term (Next Sprint)
-- [ ] Treatment plan editing by therapist
-- [ ] Manual transcript upload/paste
+### 9.1 Completed in v1.1
+
+- [x] Treatment plan editing by therapist
+- [x] Manual transcript upload (.doc/.docx/.txt)
+- [x] PDF downloads for all documents
+- [x] View Full Plan modal
+- [x] View Summary modal with tab views
+- [x] Plan evolution across sessions
+- [x] Longer, more realistic transcripts (50+ exchanges)
+- [x] Actual names in transcripts (not THERAPIST/CLIENT)
+- [x] "Last updated" timestamps
+- [x] Delete session functionality
+- [x] Consistent checkbox UI in client portal
+
+### 9.2 Future Enhancements
+
+#### Short-term
 - [ ] Client authentication
 - [ ] Session scheduling
+- [ ] Homework completion tracking (persistent)
 
-### 9.2 Medium-term
+#### Medium-term
 - [ ] Progress tracking visualizations
-- [ ] Homework completion tracking
 - [ ] Multi-therapist support
 - [ ] PostgreSQL migration
 
-### 9.3 Long-term
+#### Long-term
 - [ ] Real-time collaboration
 - [ ] Mobile application
 - [ ] Integration with EHR systems
@@ -436,4 +506,3 @@ DATABASE_URL=file:...    # Optional: Database path
 **Document Owner**: Development Team  
 **Stakeholders**: Gauntlet, Tava Health  
 **Approval Status**: Draft
-
