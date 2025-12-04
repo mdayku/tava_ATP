@@ -6,7 +6,9 @@ import SessionActions from "./SessionActions";
 import TranscriptModal from "./TranscriptModal";
 import UploadTranscriptModal from "./UploadTranscriptModal";
 import EditPlanModal from "./EditPlanModal";
-import { DeleteSessionButton, DeletePlanButton, DeleteSummaryButton } from "./DeleteButtons";
+import ViewPlanModal from "./ViewPlanModal";
+import ViewSummaryModal from "./ViewSummaryModal";
+import { DeleteSessionButton } from "./DeleteButtons";
 
 export const dynamic = "force-dynamic";
 
@@ -277,21 +279,44 @@ export default async function ClientTimelinePage({ params }: Props) {
                       </div>
                     )}
 
-                    {/* Actions */}
-                    <div className="flex flex-wrap items-center gap-2">
+                    {/* Actions Row 1 - View/Edit */}
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <TranscriptModal
                         sessionId={session.id}
+                        sessionNumber={sessionNumber}
                         transcript={session.transcript}
                         clientName={client.displayName}
                         sessionDate={session.date.toString()}
                       />
                       {latestPlan && therapistView && (
-                        <EditPlanModal
-                          planVersionId={latestPlan.id}
-                          therapistView={therapistView}
+                        <>
+                          <ViewPlanModal
+                            sessionNumber={sessionNumber}
+                            sessionDate={session.date.toString()}
+                            clientName={client.displayName}
+                            therapistView={therapistView}
+                            versionNumber={latestPlan.versionNumber}
+                          />
+                          <EditPlanModal
+                            planVersionId={latestPlan.id}
+                            therapistView={therapistView}
+                            sessionNumber={sessionNumber}
+                          />
+                        </>
+                      )}
+                      {session.summaries && (
+                        <ViewSummaryModal
                           sessionNumber={sessionNumber}
+                          sessionDate={session.date.toString()}
+                          clientName={client.displayName}
+                          therapistView={JSON.parse(session.summaries.therapistView as string)}
+                          clientView={JSON.parse(session.summaries.clientView as string)}
                         />
                       )}
+                    </div>
+                    
+                    {/* Actions Row 2 - Generate/Delete */}
+                    <div className="flex items-center justify-between">
                       <SessionActions
                         clientId={client.id}
                         personaId={client.personaId}
@@ -303,22 +328,11 @@ export default async function ClientTimelinePage({ params }: Props) {
                         isInline
                       />
                       
-                      {/* Spacer */}
-                      <div className="flex-1" />
-                      
-                      {/* Delete Actions */}
-                      <div className="flex items-center gap-1 border-l border-white/10 pl-3">
-                        {latestPlan && (
-                          <DeletePlanButton planId={latestPlan.id} />
-                        )}
-                        {session.summaries && (
-                          <DeleteSummaryButton summaryId={session.summaries.id} />
-                        )}
-                        <DeleteSessionButton 
-                          sessionId={session.id} 
-                          sessionNumber={sessionNumber}
-                        />
-                      </div>
+                      {/* Delete Session Button */}
+                      <DeleteSessionButton 
+                        sessionId={session.id} 
+                        sessionNumber={sessionNumber}
+                      />
                     </div>
                   </div>
                 );

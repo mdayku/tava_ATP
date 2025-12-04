@@ -225,14 +225,14 @@ export default async function ClientDashboardPage({ params }: Props) {
               </div>
               <div className="px-6 py-5">
                 {plan.homework?.length > 0 ? (
-                  <ul className="space-y-3">
+                  <ul className="space-y-4">
                     {plan.homework.map((item: string, idx: number) => (
                       <li key={idx} className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          className="mt-1 w-5 h-5 rounded-md bg-white/5 border-white/20 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                        />
-                        <span className="text-gray-300">{item}</span>
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                          <span className="flex-shrink-0 w-5 h-5 mt-0.5 rounded border-2 border-amber-500/40 bg-white/5 flex items-center justify-center group-hover:border-amber-500/60 transition-colors">
+                          </span>
+                          <span className="text-gray-300 group-hover:text-white transition-colors">{item}</span>
+                        </label>
                       </li>
                     ))}
                   </ul>
