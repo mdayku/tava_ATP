@@ -8,8 +8,10 @@ interface SessionActionsProps {
   personaId: string;
   sessionId?: number;
   sessionCount?: number;
+  sessionNumber?: number; // Which session number this is (1, 2, 3...)
   hasPlan?: boolean;
   hasSummary?: boolean;
+  hasExistingClientPlan?: boolean; // Does client have any existing plan from previous sessions?
   isInline?: boolean;
 }
 
@@ -18,8 +20,10 @@ export default function SessionActions({
   personaId,
   sessionId,
   sessionCount = 0,
+  sessionNumber,
   hasPlan = false,
   hasSummary = false,
+  hasExistingClientPlan = false,
   isInline = false,
 }: SessionActionsProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
@@ -100,6 +104,18 @@ export default function SessionActions({
   const buttonOutline = `${buttonBase} bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-white/20`;
   const buttonPrimary = `${buttonBase} bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500`;
 
+  // Determine the plan button label
+  const getPlanButtonLabel = () => {
+    if (hasPlan) {
+      return "Regenerate Plan";
+    }
+    // If this client has a plan from a previous session, show "Update Plan"
+    if (hasExistingClientPlan) {
+      return "Update Plan";
+    }
+    return "Generate Plan";
+  };
+
   if (isInline) {
     // Inline actions for individual sessions
     return (
@@ -111,12 +127,16 @@ export default function SessionActions({
         >
           {loadingAction === "plan" ? (
             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : hasExistingClientPlan && !hasPlan ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
           ) : (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           )}
-          {hasPlan ? "Regenerate Plan" : "Generate Plan"}
+          {getPlanButtonLabel()}
         </button>
         <button
           onClick={handleGenerateSummary}

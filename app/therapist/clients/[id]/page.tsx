@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { CLIENT_PERSONAS } from "@/lib/personas";
 import SessionActions from "./SessionActions";
 import TranscriptModal from "./TranscriptModal";
-import ManualTranscriptModal from "./ManualTranscriptModal";
+import UploadTranscriptModal from "./UploadTranscriptModal";
 import EditPlanModal from "./EditPlanModal";
 import { DeleteSessionButton, DeletePlanButton, DeleteSummaryButton } from "./DeleteButtons";
 
@@ -146,7 +146,7 @@ export default async function ClientTimelinePage({ params }: Props) {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-white">Sessions</h2>
             <div className="flex items-center gap-2">
-              <ManualTranscriptModal clientId={client.id} clientName={client.displayName} />
+              <UploadTranscriptModal clientId={client.id} clientName={client.displayName} />
               <SessionActions clientId={client.id} personaId={client.personaId} sessionCount={client.sessions.length} />
             </div>
           </div>
@@ -166,12 +166,18 @@ export default async function ClientTimelinePage({ params }: Props) {
           ) : (
             <div className="space-y-4">
               {client.sessions.map((session, index) => {
+                const sessionNumber = client.sessions.length - index;
                 const latestPlan = session.planVersions[0];
                 const riskFlags = latestPlan
                   ? JSON.parse(latestPlan.riskFlags as string)
                   : null;
                 const hasSummary = !!session.summaries;
                 const therapistView = latestPlan ? JSON.parse(latestPlan.therapistView as string) : null;
+                
+                // Check if any previous session has a plan (for "Update Plan" label)
+                const hasExistingClientPlan = client.sessions.some((s, i) => 
+                  i > index && s.planVersions.length > 0
+                );
 
                 return (
                   <div
@@ -182,7 +188,7 @@ export default async function ClientTimelinePage({ params }: Props) {
                       <div>
                         <div className="flex items-center gap-3">
                           <h3 className="font-semibold text-white">
-                            Session #{client.sessions.length - index}
+                            Session #{sessionNumber}
                           </h3>
                           <span className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${
                             session.source === "manual" 
@@ -283,15 +289,17 @@ export default async function ClientTimelinePage({ params }: Props) {
                         <EditPlanModal
                           planVersionId={latestPlan.id}
                           therapistView={therapistView}
-                          sessionNumber={client.sessions.length - index}
+                          sessionNumber={sessionNumber}
                         />
                       )}
                       <SessionActions
                         clientId={client.id}
                         personaId={client.personaId}
                         sessionId={session.id}
+                        sessionNumber={sessionNumber}
                         hasPlan={!!latestPlan}
                         hasSummary={hasSummary}
+                        hasExistingClientPlan={hasExistingClientPlan}
                         isInline
                       />
                       
@@ -308,7 +316,7 @@ export default async function ClientTimelinePage({ params }: Props) {
                         )}
                         <DeleteSessionButton 
                           sessionId={session.id} 
-                          sessionNumber={client.sessions.length - index}
+                          sessionNumber={sessionNumber}
                         />
                       </div>
                     </div>
